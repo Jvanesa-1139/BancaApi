@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using BancaApi.Repositories;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Immutable;
 using System.Linq;
@@ -11,26 +12,16 @@ namespace BancaApi.Controllers
     public class CreditosController : ControllerBase
     {
 
-        private readonly BancaContext _bancaContext;
+        private readonly ICreditoRepository _repo;
 
-        public CreditosController(BancaContext bancaContext)
+        public CreditosController(ICreditoRepository repo)
         {
-            _bancaContext = bancaContext;
+            _repo = repo;
         }
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var creditos = await _bancaContext.Creditos
-                           .Include(c => c.Cliente)
-                           .Select(c => new CreditoDto
-                           {
-                               Id = c.Id,
-                               Titular = c.Titular,
-                               MontoAprobado = c.MontoAprobado,
-                               PlazoMeses = c.PlazoMeses,
-                               NombreCliente = c.Cliente.Nombre
-                           })
-                           .ToListAsync();
+            var creditos = await _repo.GeAllAsync();
 
             return Ok(creditos);
         }
@@ -38,24 +29,14 @@ namespace BancaApi.Controllers
         [HttpGet("{id}")]
        public async Task<IActionResult> GetByID(int id)
         {
-            var existe = await _bancaContext.Creditos
-                .Include(c => c.Cliente)
-                .FirstOrDefaultAsync(c => c.Id == id);
+            var existe = await _repo.GetByIdAsync(id);
                                                  
               if (existe== null)
             {
                 return NotFound("Credito no encontraro");
             }
-            var dto = new CreditoDto
-            {
-                Id = existe.Id,
-                Titular = existe.Titular,
-                MontoAprobado = existe.MontoAprobado,
-                PlazoMeses = existe.PlazoMeses,
-                NombreCliente = existe.Cliente.Nombre
-            };
 
-            return Ok(dto);
+            return Ok(existe);
         }
 
         [HttpPost]
@@ -63,20 +44,7 @@ namespace BancaApi.Controllers
         {
             if (dto == null)
                 return BadRequest("Formulario vacio");
-   
-                var nuevoCredito = new Credito
-                {
-                    Titular = dto.Titular,
-                    MontoAprobado = dto.MontoAprobado,
-                    PlazoMeses = dto.PlazoMeses,
-                    TasaAnual = dto.TasaAnual,
-                    ClienteId = dto.ClienteId
-                };
-
-                _bancaContext.Creditos.Add(nuevoCredito);
-                 await _bancaContext.SaveChangesAsync();
-            
-
+                await _repo.CreateAsync(dto);
                 return Ok("Cliente Creado correctamente");
         }
 
@@ -84,20 +52,10 @@ namespace BancaApi.Controllers
 
         public async Task<IActionResult> ActualizacionCredito([FromBody] UpdateDto dto, int id)
         {
-            var existe = await _bancaContext.Creditos
-                        .Include(c => c.Cliente)
-                        .FirstOrDefaultAsync(x => x.Id == id);
-            if(existe == null)
-                return NotFound("No existe credito ingresado");
-
-                existe.Titular = dto.Titular;
-                existe.MontoAprobado = dto.MontoAprobado;
-                existe.PlazoMeses = dto.PlazoMeses;
-                existe.TasaAnual = dto.TasaAnual;
-                existe.ClienteId = dto.ClienteId;
-
-            await _bancaContext.SaveChangesAsync();
-
+            var existe = await _repo.UpdateAsync(id,dto);
+            if (!existe)
+                return BadRequest("Credito no existe");
+          
             return Ok("Se actualizo correctamente");
         }
 
@@ -105,12 +63,10 @@ namespace BancaApi.Controllers
 
         public async Task<IActionResult> EliminacionCredito(int id)
         {
-            var existe = await _bancaContext.Creditos.FirstOrDefaultAsync(c => c.Id == id);
+            var existe = await _repo.DeleteAsync(id);
 
-            if (existe == null)
+            if (!existe)
                 return NotFound("Credito no existe");
-
-             _bancaContext.Remove(existe);
 
             return Ok($"credito N°: {id} eliminado");
                 

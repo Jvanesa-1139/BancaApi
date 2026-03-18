@@ -1,5 +1,6 @@
 using BancaApi;
 using BancaApi.Middleware;
+using BancaApi.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -8,6 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<BancaContext>(options =>
 options.UseSqlServer(builder.Configuration.GetConnectionString("BancaDB")));
+builder.Services.AddScoped<ICreditoRepository, CreditoRepository>();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
