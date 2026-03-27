@@ -1,4 +1,5 @@
 ﻿using BancaApi.Repositories;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Immutable;
@@ -7,6 +8,7 @@ using System.Xml;
 
 namespace BancaApi.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[Controller]")]
     public class CreditosController : ControllerBase
@@ -18,6 +20,7 @@ namespace BancaApi.Controllers
         {
             _repo = repo;
         }
+        [Authorize]
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
@@ -26,6 +29,7 @@ namespace BancaApi.Controllers
             return Ok(creditos);
         }
 
+        [Authorize]
         [HttpGet("{id}")]
        public async Task<IActionResult> GetByID(int id)
         {
@@ -39,6 +43,7 @@ namespace BancaApi.Controllers
             return Ok(existe);
         }
 
+        [Authorize(Roles ="Admin")]
         [HttpPost]
         public async Task<IActionResult> CreacionCredito([FromBody] CreateCreditoDto dto)
         {
@@ -48,6 +53,7 @@ namespace BancaApi.Controllers
                 return Ok("Cliente Creado correctamente");
         }
 
+        [Authorize(Roles ="Admin")]
         [HttpPut("{id}")]
 
         public async Task<IActionResult> ActualizacionCredito([FromBody] UpdateDto dto, int id)
@@ -59,6 +65,7 @@ namespace BancaApi.Controllers
             return Ok("Se actualizo correctamente");
         }
 
+        [Authorize(Roles ="Admin")]
         [HttpDelete("{id}")]
 
         public async Task<IActionResult> EliminacionCredito(int id)
